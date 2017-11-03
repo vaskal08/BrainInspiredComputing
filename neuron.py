@@ -138,4 +138,3 @@ class HHNeuron(IFNeuron):
         
         self.time = time
         return self.voltage
-
