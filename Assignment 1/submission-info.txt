@@ -1,0 +1,3 @@
+The code for the following assignment is in two Python classes: assignment1.py and neuron.py.
+Matplotlib is required for plotting if the script is to be ran. The script to run is assignment1.py.
+neuron.py contains the logic for each of the neurons to do the plotting. 
