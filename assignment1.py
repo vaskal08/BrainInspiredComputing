@@ -13,11 +13,12 @@ fig = plot.figure()
 ax1 = fig.add_subplot(1, 1, 1)
 
 # Programming task 1 - Plotting LIF neurons with different input currents
-neuron_1 = LIFNeuron(50, 10.0)
+neuron_1 = IFNeuron(50)
 input_1 = neuron_1.input(lambda t: 8, 0)
 
-neuron_2 = LIFNeuron(50, 10.0)
-input_2 = neuron_2.input(lambda t:6, 0)
+neuron_2 = LIFNeuron(50, 100.0)
+input_2 = neuron_2.input(lambda t:6 if t > 20 and t < 40 else 0, 0)
+input_4 = neuron_2.input(lambda t:10 if t > 60 and t < 80 else 0, 0)
 
 neuron_3 = LIFNeuron(50, 10.0)
 input_3 = neuron_3.input(lambda t:4, 0)
@@ -39,11 +40,11 @@ for i, t in enumerate(time):
 
 #uncomment the following lines to show programming task #1
 
-#ax1.plot(T, V, T, V2, T, V3)
-#plot.xlabel("time (msec)")
-#plot.ylabel("membrane potential (mV)")
-#plot.title("LIF neurons of resistance 10kOhm with different input currents")
-#plot.legend(("8mv", "6mv", "4mv"))
+ax1.plot(T, V, T, V2, T, V3)
+plot.xlabel("time (msec)")
+plot.ylabel("membrane potential (mV)")
+plot.title("LIF neurons of resistance 10kOhm with different input currents")
+plot.legend(("8mv", "6mv", "4mv"))
 
 
 # Programming task 3 - Plotting the firing rate as a function of the input current
@@ -71,10 +72,13 @@ for input_current in input_currents:
 # Programming task 4 - Plotting a Izhikevich neuron
 
 izhNeuron = IzhikevichNeuron(a=0.02, b=0.2, c=-65, d=6, v=-70)
-izhInput = izhNeuron.input(lambda t: 14 if t > 10 else 0, 0)
+izhInput = izhNeuron.input(lambda t: 30 if t > 10 and t < 40 else 0, 0)
+#izhInput2 = izhNeuron.input(lambda t:6 if t > 20 and t < 40 else 0, 0)
+izhInput3 = izhNeuron.input(lambda t: 10 if t > 60 and t < 80 else 0, 0)
 
 T = []
 V = []
+V2 = []
 
 D     = 120    # ms
 dt    = 0.025 # ms
@@ -83,18 +87,19 @@ time  = arange(0,D+dt,dt)
 for i, t in enumerate(time):
     T.append(t)
     V.append(izhNeuron.get(t))
+    V2.append(izhNeuron.i(t))
 
 #uncomment the following lines to show programming task #4
 
-ax1.plot(T, V)
-plot.xlabel("time (msec)")
-plot.ylabel("membrane potential (mV)")
-plot.title("Plot of an Izhikevich Neuron (tonic spiking)")
+#ax1.plot(T, V, T, V2)
+#plot.xlabel("time (msec)")
+#plot.ylabel("membrane potential (mV)")
+#plot.title("Plot of an Izhikevich Neuron (tonic spiking)")
 
 # Programming task 5 - Plotting a Hodgkin-Huxley neuron
 
 hhNeuron = HHNeuron()
-izhInput = hhNeuron.input(lambda t: 20 if t > 10 and t< 20 else 0, 0)
+hhInput = hhNeuron.input(lambda t: 20 if t > 10 and t< 20 else 0, 0)
 
 T = []
 V = []
@@ -112,6 +117,6 @@ for i, t in enumerate(time):
 #ax1.plot(T, V)
 #plot.xlabel("time (msec)")
 #plot.ylabel("membrane potential (mV)")
-#plot.title("Plot of an Hodgkin-Huxley Neuron")
+#plot.title("Plot of a Hodgkin-Huxley Neuron")
 
 plot.show()
