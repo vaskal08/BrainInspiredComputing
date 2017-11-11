@@ -1,6 +1,7 @@
 from __future__ import division
 from numpy import *
 from pylab import *
+
 class IFNeuron(object):
 
     def __init__(self, threshold):
@@ -12,10 +13,12 @@ class IFNeuron(object):
         self.inputFunctions = [] #(I(t) = function, t > starting)
         self.outputFunction = lambda t, d: 0
         self.outputFunctions = []
+        self.leakTime = 2.0
+        self.axons = []
 
-    def input(self, function, starting):
+    def input(self, function):
         """Give this neuron an input signal function that takes affect where t > starting"""
-        inputFunction = (function, starting)
+        inputFunction = function
         self.inputFunctions.append(inputFunction)
         return inputFunction
 
@@ -24,9 +27,13 @@ class IFNeuron(object):
 
     def leak(self, time):
         dV = self.voltage - self.Vr
-        dT = 0.2
-        print dV
-        self.output(lambda t, d: -1*(dV/dT)*d if t > time and t < time+0.2 else 0)
+        dT = self.leakTime
+        output = self.voltage
+        self.output(lambda t, d: -1*(dV/dT)*d if t > time and t < time+dT else 0)
+        for axon in self.axons:
+            postsynaptic = axon[0]
+            weight = axon[1]
+            postsynaptic.input(lambda t: output*weight if t > time and t < time+dT else 0)
 
     def o(self, time):
         totalV = 0.0
@@ -40,26 +47,29 @@ class IFNeuron(object):
     def i(self, time):
         totalV = 0.0
         for inputFunction in self.inputFunctions:
-            v = inputFunction[0](time)
+            v = inputFunction(time)
             totalV += v
 
         return totalV
 
+    def connect(self, postsynaptic, weight):
+        #create an axon connecting this neuron to a post synaptic neuron
+        self.axons.append((postsynaptic, weight))
+
     def get(self, time):
         #"""Get the voltage of this neuron at time"""
 
-        #output = self.o(time)
-        #print "{} - {}".format(time, output)
-        #if output < 0:
-            #self.voltage -= output
-        #else:
-        dT = time - self.time
-        dV = (self.i(time) / self.Cm) * dT
-        self.voltage += dV
+        output = self.o(time)
+        if output < 0:
+            self.voltage += output
+        else:
+            dT = time - self.time
+            dV = (self.i(time) / self.Cm) * dT
+            self.voltage += dV
 
         if self.voltage > self.threshold:
-            self.voltage = self.Vr
-            #self.leak(time)
+            #self.voltage = self.Vr
+            self.leak(time)
 
         self.time = time
         return self.voltage
@@ -73,14 +83,19 @@ class LIFNeuron(IFNeuron):
         self.time = 0.0
 
     def get(self, time):
-        dT = time - self.time
+        output = self.o(time)
+        if output < 0:
+            self.voltage += output
+        else:
+            dT = time - self.time
 
-        TAUm = self.Rm * self.Cm
-        dV = (((-1*self.voltage) + (self.Rm * self.i(time)))/(TAUm))*dT
-        self.voltage += dV
+            TAUm = self.Rm * self.Cm
+            dV = (((-1*self.voltage) + (self.Rm * self.i(time)))/(TAUm))*dT
+            self.voltage += dV
 
         if self.voltage > self.threshold:
-                self.voltage = self.Vr
+                #self.voltage = self.Vr
+                self.leak(time)
 
         self.time = time
         return self.voltage
@@ -91,28 +106,35 @@ class IzhikevichNeuron(IFNeuron):
         self.a = a
         self.b = b
         self.c = c
+        self.Vr = c
         self.d = d
         self.voltage = v
         self.u = u
         self.time = 0.0
 
     def get(self, time):
-        dT = time - self.time
+        output = self.o(time)
+        if output < 0:
+            self.voltage += output
+        else:
+            dT = time - self.time
 
-        dV = ((0.04*(self.voltage**2)) + (5*self.voltage) + 140 - self.u + self.i(time)) * dT
-        dU = self.a*((self.b * self.voltage) - self.u)
+            dV = ((0.04*(self.voltage**2)) + (5*self.voltage) + 140 - self.u + self.i(time)) * dT
+            dU = self.a*((self.b * self.voltage) - self.u)
 
-        self.voltage += dV
-        self.u += dU
+            self.voltage += dV
+            self.u += dU
 
         if self.voltage > self.threshold:
-                self.voltage = self.c
+                #self.voltage = self.c
+                self.leak(time)
                 self.u += self.d
 
         self.time = time
         return self.voltage
 
 class HHNeuron(IFNeuron):
+    #this neuron is not currently functional
     def __init__(self):
         super(HHNeuron, self).__init__(0.0)
         self.alpha_n = vectorize(lambda v: 0.01*(-v + 10)/(exp((-v + 10)/10) - 1) if v != 10 else 0.1)
@@ -147,21 +169,20 @@ class HHNeuron(IFNeuron):
 
     def get(self, time):
         for inputFunction in self.inputFunctions:
-            if time > inputFunction[1]:
-                dT = time - self.time
+            dT = time - self.time
 
-                g_Na = self.gbar_Na*(self.m**3)*self.h
-                g_K  = self.gbar_K*(self.n**4)
-                g_l  = self.gbar_l  
+            g_Na = self.gbar_Na*(self.m**3)*self.h
+            g_K  = self.gbar_K*(self.n**4)
+            g_l  = self.gbar_l  
                   
-                self.m += (self.alpha_m(self.voltage)*(1 - self.m) - self.beta_m(self.voltage)*self.m) * dT
-                self.h += (self.alpha_h(self.voltage)*(1 - self.h) - self.beta_h(self.voltage)*self.h) * dT
-                self.n += (self.alpha_n(self.voltage)*(1 - self.n) - self.beta_n(self.voltage)*self.n) * dT
+            self.m += (self.alpha_m(self.voltage)*(1 - self.m) - self.beta_m(self.voltage)*self.m) * dT
+            self.h += (self.alpha_h(self.voltage)*(1 - self.h) - self.beta_h(self.voltage)*self.h) * dT
+            self.n += (self.alpha_n(self.voltage)*(1 - self.n) - self.beta_n(self.voltage)*self.n) * dT
 
-                I = inputFunction[0](time)
+            I = inputFunction(time)
 
-                dV = self.voltage + (I - g_Na*(self.voltage - self.E_Na) - g_K*(self.voltage - self.E_K) - g_l*(self.voltage - self.E_l)) / self.Cm * dT
-                self.voltage += dV
+            dV = self.voltage + (I - g_Na*(self.voltage - self.E_Na) - g_K*(self.voltage - self.E_K) - g_l*(self.voltage - self.E_l)) / self.Cm * dT
+            self.voltage += dV
         
         self.time = time
         return self.voltage
