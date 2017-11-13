@@ -13,8 +13,10 @@ class IFNeuron(object):
         self.inputFunctions = [] #(I(t) = function, t > starting)
         self.outputFunction = lambda t, d: 0
         self.outputFunctions = []
-        self.leakTime = 2.0
-        self.axons = []
+        self.leakTime = 2.0 #time to leak neurons potential (ms)
+        self.synapses = []
+        self.spikes = []
+        self.round = 3
 
     def input(self, function):
         """Give this neuron an input signal function that takes affect where t > starting"""
@@ -29,11 +31,12 @@ class IFNeuron(object):
         dV = self.voltage - self.Vr
         dT = self.leakTime
         output = self.voltage
+        self.spikes.append(round(time, self.round))
         self.output(lambda t, d: -1*(dV/dT)*d if t > time and t < time+dT else 0)
-        for axon in self.axons:
-            postsynaptic = axon[0]
-            weight = axon[1]
-            postsynaptic.input(lambda t: output*weight if t > time and t < time+dT else 0)
+        for synapse in self.synapses:
+            postsynaptic = synapse[0]
+            weight = synapse[1]
+            postsynaptic.input(lambda t: (output*weight)/(dT) if t > time and t < time+dT else 0)
 
     def o(self, time):
         totalV = 0.0
@@ -53,8 +56,8 @@ class IFNeuron(object):
         return totalV
 
     def connect(self, postsynaptic, weight):
-        #create an axon connecting this neuron to a post synaptic neuron
-        self.axons.append((postsynaptic, weight))
+        #create a synapse connecting this neuron to a post synaptic neuron
+        self.synapses.append((postsynaptic, weight))
 
     def get(self, time):
         #"""Get the voltage of this neuron at time"""
@@ -66,10 +69,8 @@ class IFNeuron(object):
             dT = time - self.time
             dV = (self.i(time) / self.Cm) * dT
             self.voltage += dV
-
-        if self.voltage > self.threshold:
-            #self.voltage = self.Vr
-            self.leak(time)
+            if self.voltage > self.threshold:
+                self.leak(time)
 
         self.time = time
         return self.voltage
@@ -92,9 +93,7 @@ class LIFNeuron(IFNeuron):
             TAUm = self.Rm * self.Cm
             dV = (((-1*self.voltage) + (self.Rm * self.i(time)))/(TAUm))*dT
             self.voltage += dV
-
-        if self.voltage > self.threshold:
-                #self.voltage = self.Vr
+            if self.voltage > self.threshold:
                 self.leak(time)
 
         self.time = time
@@ -124,8 +123,7 @@ class IzhikevichNeuron(IFNeuron):
 
             self.voltage += dV
             self.u += dU
-
-        if self.voltage > self.threshold:
+            if self.voltage > self.threshold:
                 #self.voltage = self.c
                 self.leak(time)
                 self.u += self.d

@@ -35,13 +35,13 @@ V3 = []
 
 for i, t in enumerate(time):
     T.append(t)
-    V.append(neuron_1.get(t))
+    V.append(neuron_3.i(t))
     V2.append(neuron_2.get(t))
     V3.append(neuron_3.get(t))
 
 #uncomment the following lines to show programming task #1
 
-#ax1.plot(T, V2, T, V3)
+#ax1.plot(T, V, T, V2, T, V3)
 #plot.xlabel("time (msec)")
 #plot.ylabel("membrane potential (mV)")
 #plot.title("LIF neurons of resistance 10kOhm with different input currents")
@@ -84,7 +84,7 @@ izhInput4 = izhNeuron.input(lambda t: 100 if t > 68 and t < 71 else 0)
 
 izhNeuron2 = IzhikevichNeuron(a=0.02, b=0.2, c=-65, d=6, v=-70)
 
-izhNeuron.connect(izhNeuron2, 0.05)
+izhNeuron.connect(izhNeuron2, 0.75)
 
 T = []
 V = []
@@ -103,10 +103,13 @@ for i, t in enumerate(time):
 
 #uncomment the following lines to show programming task #4
 
-ax1.plot(T, V, T, V2, T, V3)
+ax1.plot(T, V2, T, V3)
 plot.xlabel("time (msec)")
 plot.ylabel("membrane potential (mV)")
 plot.title("Plot of an Izhikevich Neuron (tonic spiking)")
+
+print izhNeuron.spikes
+print izhNeuron2.spikes
 
 # Programming task 5 - Plotting a Hodgkin-Huxley neuron
 
