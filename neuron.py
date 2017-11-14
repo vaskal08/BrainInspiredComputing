@@ -5,24 +5,27 @@ from pylab import *
 class IFNeuron(object):
 
     def __init__(self, threshold):
+        self.name = "name"
         self.Cm = 10.0   #capacitance (uF)
         self.threshold = threshold #threshold (mV)
         self.Vr = 2.0 #resting voltage (mV)
         self.voltage = self.Vr #neuron's current voltage (mV)
         self.time = 0.0 #neuron's current time (msec)
-        self.inputFunctions = [] #(I(t) = function, t > starting)
+        self.inputFunctions = [lambda t: 0] #(I(t) = function, t > starting)
         self.outputFunction = lambda t, d: 0
-        self.outputFunctions = []
-        self.leakTime = 2.0 #time to leak neurons potential (ms)
+        self.leakTime = 5.0 #time to leak neurons potential (ms)
         self.synapses = []
         self.spikes = []
         self.round = 3
+        self.ins = []
 
-    def input(self, function):
+    def input(self, function, presynaptic="default", inp=-1.0):
         """Give this neuron an input signal function that takes affect where t > starting"""
-        inputFunction = function
-        self.inputFunctions.append(inputFunction)
-        return inputFunction
+        self.inputFunctions.append(function)
+        self.ins.append(inp)
+        if self.name == "one_one" and inp > 0:
+            print "{} --> {}: {}".format(presynaptic, self.name, inp) 
+        return function
 
     def output(self, function):
         self.outputFunction = function
@@ -36,7 +39,9 @@ class IFNeuron(object):
         for synapse in self.synapses:
             postsynaptic = synapse[0]
             weight = synapse[1]
-            postsynaptic.input(lambda t: (output*weight)/(dT) if t > time and t < time+dT else 0)
+            postInput = (output*weight)/(dT)
+            name = self.name
+            postsynaptic.input(lambda t: postInput if t > time and t < time+dT else 0, name, postInput)
 
     def o(self, time):
         totalV = 0.0
@@ -49,7 +54,10 @@ class IFNeuron(object):
 
     def i(self, time):
         totalV = 0.0
+
         for inputFunction in self.inputFunctions:
+            #if self.name == "one_one" and totalV > 0:
+                #print "{} {} {}".format(self.name, totalV, len(self.inputFunctions))
             v = inputFunction(time)
             totalV += v
 
@@ -100,8 +108,10 @@ class LIFNeuron(IFNeuron):
         return self.voltage
 
 class IzhikevichNeuron(IFNeuron):
-    def __init__(self, a, b, c, d, v, u=0):
+    def __init__(self, name, a, b, c, d, v, u=0):
         super(IzhikevichNeuron, self).__init__(30.0)
+        self.inputFunctions = [lambda t: 0]
+        self.name = name
         self.a = a
         self.b = b
         self.c = c
