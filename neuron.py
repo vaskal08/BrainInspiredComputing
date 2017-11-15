@@ -2,6 +2,12 @@ from __future__ import division
 from numpy import *
 from pylab import *
 
+class InputCurrent(object):
+    def __init__(self, function, presynaptic, postsynaptic):
+        self.function = function
+        self.presynaptic = presynaptic
+        self.postsynaptic = postsynaptic
+
 class IFNeuron(object):
 
     def __init__(self, threshold):
@@ -21,6 +27,7 @@ class IFNeuron(object):
 
     def input(self, function, presynaptic="default", inp=-1.0):
         """Give this neuron an input signal function that takes affect where t > starting"""
+        inputFunction = (function, presynaptic, self.name)
         self.inputFunctions.append(function)
         self.ins.append(inp)
         if self.name == "one_one" and inp > 0:
@@ -41,7 +48,8 @@ class IFNeuron(object):
             weight = synapse[1]
             postInput = (output*weight)/(dT)
             name = self.name
-            postsynaptic.input(lambda t: postInput if t > time and t < time+dT else 0, name, postInput)
+            if postInput > 0:
+                postsynaptic.input(lambda t: postInput if t > time and t < time+dT else 0, name, postInput)
 
     def o(self, time):
         totalV = 0.0
